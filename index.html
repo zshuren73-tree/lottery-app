@@ -223,7 +223,7 @@
     socket.emit('draw');
   }
 
-  socket.on('draw-result', ({ result }) {
+  socket.on('draw-result', ({ result }) => {
     const btn = document.getElementById('drawBtn');
     btn.disabled = false;
     btn.textContent = '抽 签';
