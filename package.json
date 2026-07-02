@@ -1,0 +1,16 @@
+{
+  "name": "lottery-app",
+  "version": "1.0.0",
+  "description": "现场抽签分组配对工具 - 每人手机独立抽签",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=16"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.7.4"
+  }
+}

@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>现场抽签</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+    color: #fff;
+    min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .app { width: 100%; max-width: 400px; text-align: center; }
+
+  .logo { font-size: 56px; margin-bottom: 12px; }
+  h1 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+  .sub { color: rgba(255,255,255,0.5); font-size: 13px; margin-bottom: 28px; }
+
+  /* 加入页面 */
+  .join-page { display: block; }
+  .draw-page { display: none; }
+  .result-page { display: none; }
+
+  .card {
+    background: rgba(255,255,255,0.06);
+    border-radius: 16px; padding: 24px 20px;
+    border: 1px solid rgba(255,255,255,0.08);
+    margin-bottom: 16px;
+  }
+
+  .field { margin-bottom: 16px; text-align: left; }
+  .field label { display: block; font-size: 13px; color: rgba(255,255,255,0.6); margin-bottom: 6px; }
+  .field input {
+    width: 100%; padding: 14px; border-radius: 10px;
+    border: 2px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.08);
+    color: #fff; font-size: 16px; outline: none; text-align: center;
+  }
+  .field input:focus { border-color: rgba(123,104,238,0.6); }
+
+  .btn {
+    width: 100%; padding: 14px; border: none; border-radius: 12px;
+    font-size: 16px; font-weight: 700; cursor: pointer; letter-spacing: 2px;
+    transition: transform 0.15s;
+  }
+  .btn:hover { transform: translateY(-1px); }
+  .btn-primary { background: linear-gradient(135deg, #7b68ee, #9f7aea); color: #fff; }
+  .btn-draw {
+    width: 160px; height: 160px; border-radius: 50%;
+    border: 3px solid rgba(123,104,238,0.4);
+    background: radial-gradient(circle at 30% 30%, rgba(123,104,238,0.2), rgba(36,36,62,0.6));
+    color: #fff; font-size: 20px; font-weight: 700;
+    cursor: pointer; letter-spacing: 4px;
+    transition: all 0.3s; margin: 0 auto;
+  }
+  .btn-draw:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 40px rgba(123,104,238,0.3);
+    border-color: rgba(123,104,238,0.8);
+  }
+  .btn-draw:active { transform: scale(0.95); }
+  .btn-draw:disabled {
+    opacity: 0.4; cursor: not-allowed; transform: none;
+    box-shadow: none;
+  }
+
+  .error-msg { color: #ff6b6b; font-size: 13px; margin-top: 8px; display: none; }
+  .error-msg.show { display: block; }
+
+  /* 抽签结果 */
+  .result-group-label { font-size: 16px; font-weight: 600; margin-bottom: 8px; opacity: 0.8; }
+  .result-number {
+    font-size: 88px; font-weight: 900; line-height: 1;
+    margin-bottom: 12px; text-shadow: 0 0 40px currentColor;
+  }
+  .result-a .result-group-label { color: #7b68ee; }
+  .result-a .result-number { color: #b8a9ff; }
+  .result-b .result-group-label { color: #ff6b6b; }
+  .result-b .result-number { color: #ff8e8e; }
+
+  .result-name { font-size: 14px; color: rgba(255,255,255,0.5); margin-bottom: 20px; }
+  .result-hint { font-size: 13px; color: rgba(255,255,255,0.4); }
+
+  .waiting { color: rgba(255,255,255,0.4); font-size: 14px; padding: 40px 0; }
+
+  .done-icon { font-size: 56px; margin-bottom: 12px; }
+
+  .confetti-piece {
+    position: fixed; top: -10px;
+    width: 8px; height: 8px;
+    animation: confettiFall linear forwards;
+    pointer-events: none; z-index: 999;
+  }
+  @keyframes confettiFall {
+    to { top: 110vh; transform: rotate(720deg); }
+  }
+
+  .room-badge {
+    display: inline-block; padding: 4px 12px;
+    background: rgba(255,255,255,0.1); border-radius: 20px;
+    font-size: 12px; color: rgba(255,255,255,0.5); margin-bottom: 16px;
+  }
+
+  @keyframes rollIn {
+    0% { opacity: 0; transform: scale(0.3) rotate(-20deg); }
+    60% { transform: scale(1.1) rotate(5deg); }
+    100% { opacity: 1; transform: scale(1) rotate(0); }
+  }
+  .roll-in { animation: rollIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- 加入页面 -->
+  <div class="join-page" id="joinPage">
+    <div class="logo">🎲</div>
+    <h1>现场抽签</h1>
+    <div class="room-badge" id="roomBadge"></div>
+
+    <div class="card">
+      <div class="field">
+        <label>输入你的名字</label>
+        <input type="text" id="nameInput" placeholder="点击输入…" autocomplete="off" maxlength="10">
+      </div>
+      <div class="error-msg" id="joinError"></div>
+      <button class="btn btn-primary" onclick="joinRoom()">加入抽签</button>
+    </div>
+
+    <p class="sub" id="roomSub">输入名字后点击加入，然后点击抽签按钮</p>
+  </div>
+
+  <!-- 抽签页面 -->
+  <div class="draw-page" id="drawPage">
+    <p class="sub" style="margin-bottom:20px;" id="drawHint">你好，<b id="myName"></b>，准备抽签！</p>
+
+    <button class="btn-draw" id="drawBtn" onclick="doDraw()">
+      抽 签
+    </button>
+
+    <p class="result-hint" style="margin-top:20px;">点击按钮，看看你是哪一组</p>
+  </div>
+
+  <!-- 结果页面 -->
+  <div class="result-page" id="resultPage">
+    <div class="done-icon">🎉</div>
+    <h1>抽签结果</h1>
+    <p class="result-name" id="resultName"></p>
+
+    <div class="card" style="margin-top:16px;">
+      <div id="resultContent"></div>
+    </div>
+
+    <p class="result-hint">请记住你的分组，不要告诉别人哦 😉</p>
+  </div>
+</div>
+
+<div id="confettiContainer"></div>
+
+<script src="/socket.io/socket.min.js"></script>
+<script>
+  const params = new URLSearchParams(location.search);
+  const roomId = params.get('room');
+  let myName = '';
+
+  // 显示房间号
+  if (roomId) {
+    document.getElementById('roomBadge').textContent = '房间 ' + roomId;
+    document.getElementById('roomSub').textContent = '房间号：' + roomId;
+  } else {
+    document.getElementById('roomBadge').textContent = '未指定房间';
+    document.getElementById('joinError').textContent = '链接缺少房间号，请联系管理员';
+    document.getElementById('joinError').classList.add('show');
+  }
+
+  const socket = io('/user');
+
+  function joinRoom() {
+    const name = document.getElementById('nameInput').value.trim();
+    if (!name) {
+      showJoinError('请输入你的名字');
+      return;
+    }
+    if (!roomId) return;
+
+    myName = name;
+    socket.emit('join-room', { roomId, name });
+  }
+
+  // 回车加入
+  document.getElementById('nameInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') joinRoom();
+  });
+
+  socket.on('join-success', () => {
+    document.getElementById('joinPage').style.display = 'none';
+    document.getElementById('drawPage').style.display = 'block';
+    document.getElementById('myName').textContent = myName;
+  });
+
+  socket.on('join-error', ({ msg }) => {
+    showJoinError(msg);
+  });
+
+  function showJoinError(msg) {
+    const el = document.getElementById('joinError');
+    el.textContent = msg;
+    el.classList.add('show');
+  }
+
+  // ===== 抽签 =====
+  function doDraw() {
+    const btn = document.getElementById('drawBtn');
+    if (btn.disabled) return;
+
+    btn.disabled = true;
+    btn.textContent = '…';
+    btn.style.opacity = '0.5';
+
+    socket.emit('draw');
+  }
+
+  socket.on('draw-result', ({ result }) {
+    const btn = document.getElementById('drawBtn');
+    btn.disabled = false;
+    btn.textContent = '抽 签';
+    btn.style.opacity = '1';
+
+    showResult(result);
+  });
+
+  socket.on('draw-error', ({ msg }) => {
+    const btn = document.getElementById('drawBtn');
+    btn.disabled = false;
+    btn.textContent = '抽 签';
+    btn.style.opacity = '1';
+    alert(msg);
+  });
+
+  socket.on('room-reset', () => {
+    location.reload();
+  });
+
+  // ===== 展示结果 =====
+  function showResult(result) {
+    document.getElementById('drawPage').style.display = 'none';
+    document.getElementById('resultPage').style.display = 'block';
+    document.getElementById('resultName').textContent = myName;
+
+    const isA = result.group === 'A';
+    const cls = isA ? 'result-a' : 'result-b';
+
+    document.getElementById('resultContent').innerHTML = `
+      <div class="${cls} roll-in">
+        <div class="result-group-label">${result.group} 组</div>
+        <div class="result-number">${result.num}</div>
+      </div>
+    `;
+
+    // 彩屑
+    launchConfetti();
+  }
+
+  function launchConfetti() {
+    const colors = ['#7b68ee','#ff6b6b','#ffd93d','#6bcb77','#4d96ff'];
+    for (let i = 0; i < 40; i++) {
+      const piece = document.createElement('div');
+      piece.className = 'confetti-piece';
+      piece.style.left = Math.random() * 100 + '%';
+      piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+      piece.style.animationDuration = (2 + Math.random() * 2) + 's';
+      piece.style.animationDelay = Math.random() * 1 + 's';
+      piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+      document.getElementById('confettiContainer').appendChild(piece);
+    }
+    setTimeout(() => document.getElementById('confettiContainer').innerHTML = '', 5000);
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>抽签管理后台</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #0f0c29;
+    color: #fff;
+    min-height: 100vh;
+    padding: 24px 16px;
+  }
+  .container { max-width: 500px; margin: 0 auto; }
+
+  h1 { font-size: 22px; text-align: center; margin-bottom: 6px; }
+  .subtitle { text-align: center; color: rgba(255,255,255,0.5); font-size: 13px; margin-bottom: 28px; }
+
+  .card {
+    background: rgba(255,255,255,0.06);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .field { margin-bottom: 16px; }
+  .field label { display: block; font-size: 13px; color: rgba(255,255,255,0.6); margin-bottom: 6px; }
+  .field input {
+    width: 100%; padding: 12px 14px; border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.08);
+    color: #fff; font-size: 16px; outline: none; text-align: center;
+  }
+
+  .btn {
+    width: 100%; padding: 14px; border: none; border-radius: 12px;
+    font-size: 16px; font-weight: 700; cursor: pointer; letter-spacing: 2px;
+    transition: transform 0.15s;
+  }
+  .btn:hover { transform: translateY(-1px); }
+  .btn-primary { background: linear-gradient(135deg, #7b68ee, #9f7aea); color: #fff; }
+  .btn-danger { background: rgba(255,107,107,0.2); color: #ff8e8e; border: 1px solid rgba(255,107,107,0.3); }
+
+  .room-info { display: none; }
+  .room-info.show { display: block; }
+
+  .room-id-badge {
+    text-align: center; padding: 16px; background: rgba(123,104,238,0.15);
+    border-radius: 12px; margin-bottom: 16px; border: 1px solid rgba(123,104,238,0.3);
+  }
+  .room-id-badge .label { font-size: 13px; color: rgba(255,255,255,0.6); margin-bottom: 4px; }
+  .room-id-badge .id { font-size: 36px; font-weight: 900; letter-spacing: 6px; color: #9f7aea; }
+
+  .qr-area {
+    text-align: center; margin-bottom: 16px;
+  }
+  .qr-area canvas { border-radius: 12px; padding: 8px; background: #fff; }
+
+  .invite-link {
+    display: flex; gap: 8px; margin-bottom: 16px;
+  }
+  .invite-link input {
+    flex: 1; padding: 10px 12px; border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.08);
+    color: #fff; font-size: 12px; outline: none;
+  }
+  .invite-link button {
+    padding: 10px 14px; border-radius: 8px; border: none;
+    background: rgba(123,104,238,0.3); color: #fff; font-size: 12px; cursor: pointer;
+  }
+
+  .status-row {
+    display: flex; justify-content: space-between; padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 14px;
+  }
+  .status-row:last-child { border-bottom: none; }
+  .status-label { color: rgba(255,255,255,0.6); }
+
+  .player-list { margin-top: 12px; }
+  .player-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 12px; background: rgba(255,255,255,0.04);
+    border-radius: 8px; margin-bottom: 6px; font-size: 14px;
+  }
+  .player-result { font-weight: 700; }
+  .player-result.a { color: #b8a9ff; }
+  .player-result.b { color: #ff8e8e; }
+  .player-result.none { color: rgba(255,255,255,0.3); }
+
+  .pair-summary { margin-top: 16px; }
+  .pair-row {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    padding: 8px 12px; background: rgba(255,255,255,0.04);
+    border-radius: 8px; margin-bottom: 6px; font-size: 14px;
+  }
+  .pair-tag { padding: 3px 10px; border-radius: 6px; font-weight: 700; font-size: 13px; }
+  .pair-tag.a { background: rgba(123,104,238,0.25); color: #b8a9ff; }
+  .pair-tag.b { background: rgba(255,107,107,0.25); color: #ff8e8e; }
+  .pair-link { color: rgba(255,255,255,0.3); }
+
+  .empty { text-align: center; color: rgba(255,255,255,0.3); padding: 20px; font-size: 14px; }
+
+  #status { display: none; }
+  #status.show { display: block; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>🎲 抽签管理后台</h1>
+  <p class="subtitle">创建房间，让大家扫码抽签</p>
+
+  <!-- 设置区域 -->
+  <div id="setupArea">
+    <div class="card">
+      <div class="field">
+        <label>参与总人数</label>
+        <input type="number" id="totalInput" min="2" max="200" value="10">
+      </div>
+      <div class="field">
+        <label>A 组人数（其余自动归入 B 组）</label>
+        <input type="number" id="groupAInput" min="1" max="199" value="5">
+      </div>
+      <button class="btn btn-primary" onclick="createRoom()">创建房间</button>
+    </div>
+  </div>
+
+  <!-- 房间状态 -->
+  <div id="status">
+    <div class="room-info show">
+      <div class="room-id-badge">
+        <div class="label">房间号</div>
+        <div class="id" id="roomId">----</div>
+      </div>
+
+      <div class="qr-area">
+        <canvas id="qrCanvas"></canvas>
+        <p style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:8px">用手机扫描二维码加入</p>
+      </div>
+
+      <div class="invite-link">
+        <input id="inviteUrl" readonly>
+        <button onclick="copyLink()">复制链接</button>
+      </div>
+
+      <div class="card">
+        <div class="status-row">
+          <span class="status-label">总人数</span>
+          <span id="sTotal">-</span>
+        </div>
+        <div class="status-row">
+          <span class="status-label">已加入</span>
+          <span id="sJoined">0</span>
+        </div>
+        <div class="status-row">
+          <span class="status-label">已抽签</span>
+          <span id="sDrawn">0</span>
+        </div>
+        <div class="status-row">
+          <span class="status-label">剩余签数</span>
+          <span id="sRemain">-</span>
+        </div>
+
+        <div class="player-list" id="playerList">
+          <p class="empty">等待大家加入…</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 style="font-size:15px;margin-bottom:12px;">🤝 配对结果</h3>
+        <div class="pair-summary" id="pairSummary">
+          <p class="empty">等待抽签完成…</p>
+        </div>
+      </div>
+
+      <button class="btn btn-danger" style="margin-top:8px;" onclick="resetRoom()">重置房间</button>
+    </div>
+  </div>
+</div>
+
+<script src="/socket.io/socket.min.js"></script>
+<script>
+  // 简易 QR 码生成（用 API 或用 canvas）
+  function generateQR(url, canvasId) {
+    // 使用 QR Server API 生成二维码图片
+    const img = document.createElement('img');
+    img.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
+    img.style.borderRadius = '12px';
+    img.style.padding = '8px';
+    img.style.background = '#fff';
+    const container = document.getElementById(canvasId).parentElement;
+    container.innerHTML = '';
+    container.appendChild(img);
+  }
+
+  let currentRoomId = '';
+  const socket = io('/admin');
+
+  function createRoom() {
+    const total = parseInt(document.getElementById('totalInput').value) || 10;
+    const groupASize = parseInt(document.getElementById('groupAInput').value) || Math.ceil(total / 2);
+    socket.emit('create-room', { total, groupASize });
+  }
+
+  socket.on('room-created', ({ roomId }) => {
+    currentRoomId = roomId;
+    document.getElementById('setupArea').style.display = 'none';
+    document.getElementById('status').classList.add('show');
+    document.getElementById('roomId').textContent = roomId;
+
+    const url = location.origin + '/index.html?room=' + roomId;
+    document.getElementById('inviteUrl').value = url;
+    generateQR(url, 'qrCanvas');
+  });
+
+  socket.on('room-status', (data) => {
+    document.getElementById('sTotal').textContent = data.total;
+    document.getElementById('sJoined').textContent = data.players.length;
+    document.getElementById('sDrawn').textContent = data.drawnCount;
+    document.getElementById('sRemain').textContent = data.remain;
+
+    // 玩家列表
+    const list = document.getElementById('playerList');
+    if (data.players.length === 0) {
+      list.innerHTML = '<p class="empty">等待大家加入…</p>';
+    } else {
+      list.innerHTML = data.players.map(p => `
+        <div class="player-item">
+          <span>${p.name}</span>
+          <span class="player-result ${p.result ? p.result.group.toLowerCase() : 'none'}">
+            ${p.result ? p.result.group + p.result.num : '未抽签'}
+          </span>
+        </div>
+      `).join('');
+    }
+
+    // 配对结果
+    const summary = document.getElementById('pairSummary');
+    if (data.pairs && data.pairs.length > 0) {
+      const hasAny = data.pairs.some(p => p.a || p.b);
+      if (hasAny) {
+        summary.innerHTML = data.pairs.map(p => `
+          <div class="pair-row">
+            <span class="pair-tag a">${p.a ? p.a.name + ' (A' + p.a.num + ')' : '等待…'}</span>
+            <span class="pair-link">🤝</span>
+            <span class="pair-tag b">${p.b ? p.b.name + ' (B' + p.b.num + ')' : '等待…'}</span>
+          </div>
+        `).join('');
+      }
+    }
+  });
+
+  function resetRoom() {
+    if (!confirm('确定重置？所有人需重新抽签')) return;
+    socket.emit('reset-room', currentRoomId);
+  }
+
+  socket.on('room-reset-done', () => {
+    document.getElementById('playerList').innerHTML = '<p class="empty">等待大家加入…</p>';
+    document.getElementById('pairSummary').innerHTML = '<p class="empty">等待抽签完成…</p>';
+  });
+
+  function copyLink() {
+    const url = document.getElementById('inviteUrl').value;
+    navigator.clipboard.writeText(url).then(() => alert('链接已复制！'));
+  }
+</script>
+</body>
+</html>
