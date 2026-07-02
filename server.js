@@ -9,7 +9,7 @@ const io = new Server(server, {
   cors: { origin: '*' }
 });
 
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname)));
 app.get('/', (req, res) => {
   res.redirect('/admin.html');
 });
