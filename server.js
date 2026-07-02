@@ -10,6 +10,9 @@ const io = new Server(server, {
 });
 
 app.use(express.static(path.join(__dirname, 'public')));
+app.get('/', (req, res) => {
+  res.redirect('/admin.html');
+});
 
 // 房间数据存储在内存
 // rooms: { roomId: { total, groupASize, lots: [], drawn: [], players: {} } }
